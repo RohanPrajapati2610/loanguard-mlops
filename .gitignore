@@ -1,0 +1,30 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Data — too large for GitHub (tracked by DVC)
+data/raw/*.csv
+data/processed/train.csv
+data/processed/new_data.csv
+data/drifted/
+
+# Logs
+logs/
+airflow/logs/
+
+# MLflow runs (large)
+mlruns/
+
+# Docker
+*.tar
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

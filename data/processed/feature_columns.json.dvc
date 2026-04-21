@@ -1,0 +1,5 @@
+outs:
+- md5: 147800042c4babaea2543a4c14540b94
+  size: 2174
+  hash: md5
+  path: feature_columns.json

@@ -1,0 +1,5 @@
+outs:
+- md5: 4547dea9a009cc43a7658156dc6e17b1
+  size: 2130540
+  hash: md5
+  path: loan_fraud_model.json
