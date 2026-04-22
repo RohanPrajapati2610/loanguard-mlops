@@ -16,8 +16,8 @@ COPY src/ ./src/
 COPY models/ ./models/
 COPY data/processed/feature_columns.json ./data/processed/feature_columns.json
 
-# Expose port 8000
-EXPOSE 8000
+# HuggingFace Spaces requires port 7860
+EXPOSE 7860
 
 # Run the FastAPI app
-CMD ["uvicorn", "src.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.api.app:app", "--host", "0.0.0.0", "--port", "7860"]
