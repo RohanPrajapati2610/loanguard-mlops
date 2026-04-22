@@ -198,8 +198,8 @@ if page == "📊 Overview":
     # ── TOP METRICS ──
     col1, col2, col3, col4 = st.columns(4)
 
-    fraud_rate_train = train_df["fraud_label"].mean() * 100
-    fraud_rate_new   = new_df["fraud_label"].mean() * 100
+    fraud_rate_train = train_df["is_fraud"].mean() * 100
+    fraud_rate_new   = new_df["is_fraud"].mean() * 100
     total_samples    = len(train_df) + len(new_df)
 
     col1.metric("Training Samples",  f"{len(train_df):,}",  help="Rows used to train the model")
@@ -237,7 +237,7 @@ if page == "📊 Overview":
 
     with col1:
         st.subheader("Fraud Distribution — Training Data")
-        labels = train_df["fraud_label"].value_counts().reset_index()
+        labels = train_df["is_fraud"].value_counts().reset_index()
         labels.columns = ["Label", "Count"]
         labels["Label"] = labels["Label"].map({0: "Legit", 1: "Fraud"})
         fig = px.pie(
@@ -251,7 +251,7 @@ if page == "📊 Overview":
 
     with col2:
         st.subheader("Fraud Distribution — New Incoming Data")
-        labels2 = new_df["fraud_label"].value_counts().reset_index()
+        labels2 = new_df["is_fraud"].value_counts().reset_index()
         labels2.columns = ["Label", "Count"]
         labels2["Label"] = labels2["Label"].map({0: "Legit", 1: "Fraud"})
         fig2 = px.pie(
@@ -359,8 +359,8 @@ elif page == "📈 Model Performance":
     st.markdown("Evaluation metrics on validation data.")
 
     # Run evaluation
-    X_new = new_df.drop(columns=["fraud_label"])
-    y_new = new_df["fraud_label"]
+    X_new = new_df.drop(columns=["is_fraud"])
+    y_new = new_df["is_fraud"]
 
     # Align features
     for col in feature_cols:
