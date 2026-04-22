@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LoanGuard — Fraud Detection</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(135deg, #1a1f2e 0%, #0f1117 100%);
+      border-bottom: 1px solid #2d3748;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo { font-size: 24px; font-weight: 800; color: #667eea; }
+    .logo span { color: #e2e8f0; }
+    .tagline { font-size: 13px; color: #718096; margin-left: auto; }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 60px 20px 40px;
+    }
+    .hero h1 {
+      font-size: 42px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+    }
+    .hero p {
+      color: #718096;
+      font-size: 16px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    /* ── STATS BAR ── */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .stat { text-align: center; }
+    .stat-value { font-size: 28px; font-weight: 800; color: #667eea; }
+    .stat-label { font-size: 12px; color: #718096; margin-top: 2px; }
+
+    /* ── MAIN LAYOUT ── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px 60px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+    @media (max-width: 768px) { .container { grid-template-columns: 1fr; } }
+
+    /* ── CARD ── */
+    .card {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 16px;
+      padding: 28px;
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-bottom: 6px;
+    }
+    .card-subtitle {
+      font-size: 13px;
+      color: #718096;
+      margin-bottom: 24px;
+    }
+
+    /* ── FORM ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #a0aec0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    label .hint {
+      font-size: 11px;
+      color: #4a5568;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    input, select {
+      background: #0f1117;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #e2e8f0;
+      font-size: 14px;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    select option { background: #1a1f2e; }
+
+    /* ── PRESETS ── */
+    .presets {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .preset-btn {
+      background: #2d3748;
+      border: 1px solid #4a5568;
+      border-radius: 20px;
+      padding: 6px 14px;
+      color: #a0aec0;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .preset-btn:hover { background: #4a5568; color: #e2e8f0; }
+    .preset-btn.safe { border-color: #48bb78; color: #48bb78; }
+    .preset-btn.safe:hover { background: #48bb7820; }
+    .preset-btn.risky { border-color: #fc8181; color: #fc8181; }
+    .preset-btn.risky:hover { background: #fc818120; }
+
+    /* ── SUBMIT ── */
+    .submit-btn {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .submit-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .submit-btn:active { transform: translateY(0); }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── RESULT PANEL ── */
+    .result-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Risk Gauge */
+    .risk-gauge {
+      text-align: center;
+      padding: 30px 20px;
+      border-radius: 12px;
+      border: 2px solid #2d3748;
+      background: #0f1117;
+      transition: all 0.4s ease;
+    }
+    .risk-gauge.LOW    { border-color: #48bb78; background: #48bb7810; }
+    .risk-gauge.MEDIUM { border-color: #ecc94b; background: #ecc94b10; }
+    .risk-gauge.HIGH   { border-color: #fc8181; background: #fc818110; }
+
+    .risk-icon { font-size: 56px; margin-bottom: 12px; }
+    .risk-label {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .risk-label.LOW    { color: #48bb78; }
+    .risk-label.MEDIUM { color: #ecc94b; }
+    .risk-label.HIGH   { color: #fc8181; }
+
+    /* Probability bar */
+    .prob-section { margin-top: 8px; }
+    .prob-title { font-size: 13px; color: #718096; margin-bottom: 8px; }
+    .prob-bar-track {
+      background: #2d3748;
+      border-radius: 99px;
+      height: 10px;
+      overflow: hidden;
+    }
+    .prob-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.8s ease;
+      background: linear-gradient(90deg, #48bb78, #ecc94b, #fc8181);
+    }
+    .prob-value {
+      text-align: right;
+      font-size: 20px;
+      font-weight: 800;
+      margin-top: 6px;
+      color: #e2e8f0;
+    }
+
+    /* Metrics grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .metric-box {
+      background: #0f1117;
+      border: 1px solid #2d3748;
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+    }
+    .metric-box-label { font-size: 11px; color: #718096; margin-bottom: 4px; }
+    .metric-box-value { font-size: 22px; font-weight: 800; color: #667eea; }
+
+    /* Decision */
+    .decision-box {
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .decision-box.approve { background: #48bb7820; border: 1px solid #48bb78; color: #48bb78; }
+    .decision-box.review  { background: #ecc94b20; border: 1px solid #ecc94b; color: #ecc94b; }
+    .decision-box.reject  { background: #fc818120; border: 1px solid #fc8181; color: #fc8181; }
+
+    /* Explanation */
+    .explanation {
+      background: #0f1117;
+      border: 1px solid #2d3748;
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .explanation-title { font-size: 13px; color: #718096; margin-bottom: 10px; font-weight: 600; }
+    .factor {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #2d3748;
+      font-size: 13px;
+    }
+    .factor:last-child { border-bottom: none; }
+    .factor-name { color: #a0aec0; }
+    .factor-value { font-weight: 700; }
+    .factor-value.bad  { color: #fc8181; }
+    .factor-value.good { color: #48bb78; }
+    .factor-value.ok   { color: #ecc94b; }
+
+    /* Placeholder */
+    .placeholder {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 20px;
+      color: #4a5568;
+    }
+    .placeholder-icon { font-size: 48px; margin-bottom: 16px; }
+    .placeholder p { font-size: 14px; line-height: 1.6; }
+
+    /* Loading */
+    .loader {
+      display: none;
+      text-align: center;
+      padding: 40px;
+      color: #667eea;
+      font-size: 15px;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid #2d3748;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* History */
+    .history-section { margin-top: 30px; }
+    .history-title { font-size: 14px; font-weight: 600; color: #a0aec0; margin-bottom: 12px; }
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: #0f1117;
+      border: 1px solid #2d3748;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .history-amount { color: #e2e8f0; font-weight: 600; }
+    .history-time { color: #718096; }
+    .history-badge {
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .badge-LOW    { background: #48bb7820; color: #48bb78; }
+    .badge-MEDIUM { background: #ecc94b20; color: #ecc94b; }
+    .badge-HIGH   { background: #fc818120; color: #fc8181; }
+
+    /* API status */
+    .api-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #718096;
+      margin-top: 10px;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #fc8181;
+    }
+    .dot.online { background: #48bb78; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Loan<span>Guard</span></div>
+  <div class="tagline">ML-Powered Fraud Detection • Real-time Risk Assessment</div>
+</header>
+
+<div class="hero">
+  <h1>Is This Loan Risky?</h1>
+  <p>Enter loan details below. Our model will assess fraud risk in real-time using production ML.</p>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-value" id="total-checked">0</div>
+    <div class="stat-label">Loans Checked</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" id="total-flagged">0</div>
+    <div class="stat-label">Flagged HIGH Risk</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" id="avg-prob">—</div>
+    <div class="stat-label">Avg Fraud Probability</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- LEFT: FORM -->
+  <div class="card">
+    <div class="card-title">Loan Application</div>
+    <div class="card-subtitle">Fill in the borrower's details to assess fraud risk</div>
+
+    <div class="presets">
+      <span style="font-size:12px;color:#718096;align-self:center">Quick fill:</span>
+      <button class="preset-btn safe" onclick="fillPreset('safe')">✅ Safe Borrower</button>
+      <button class="preset-btn risky" onclick="fillPreset('risky')">🚨 Risky Borrower</button>
+      <button class="preset-btn" onclick="fillPreset('borderline')">⚠️ Borderline</button>
+    </div>
+
+    <form id="loanForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Loan Amount <span class="hint">(₹ / $)</span></label>
+          <input type="number" id="loan_amnt" value="15000" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Funded Amount</label>
+          <input type="number" id="funded_amnt" value="15000" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Term <span class="hint">(months)</span></label>
+          <select id="term">
+            <option value="36">36 months</option>
+            <option value="60">60 months</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Interest Rate <span class="hint">(%)</span></label>
+          <input type="number" id="int_rate" value="12.5" step="0.01" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Monthly Installment</label>
+          <input type="number" id="installment" value="502.5" step="0.01" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Annual Income</label>
+          <input type="number" id="annual_inc" value="65000" min="0" />
+        </div>
+        <div class="form-group">
+          <label>DTI Ratio <span class="hint">(debt-to-income %)</span></label>
+          <input type="number" id="dti" value="18.5" step="0.1" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Delinquencies <span class="hint">(past 2 yrs)</span></label>
+          <input type="number" id="delinq_2yrs" value="0" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Credit Inquiries <span class="hint">(last 6 months)</span></label>
+          <input type="number" id="inq_last_6mths" value="1" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Open Accounts</label>
+          <input type="number" id="open_acc" value="8" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Public Records</label>
+          <input type="number" id="pub_rec" value="0" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Revolving Balance</label>
+          <input type="number" id="revol_bal" value="12000" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Revolving Util. <span class="hint">(%)</span></label>
+          <input type="number" id="revol_util" value="45.2" step="0.1" min="0" max="100" />
+        </div>
+        <div class="form-group">
+          <label>Total Accounts</label>
+          <input type="number" id="total_acc" value="15" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Mortgage Accounts</label>
+          <input type="number" id="mort_acc" value="1" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Bankruptcies</label>
+          <input type="number" id="pub_rec_bankruptcies" value="0" min="0" />
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">
+        Analyze Fraud Risk →
+      </button>
+
+      <div class="api-status">
+        <div class="dot" id="apiDot"></div>
+        <span id="apiStatusText">Checking API...</span>
+      </div>
+    </form>
+  </div>
+
+  <!-- RIGHT: RESULT -->
+  <div class="card result-panel" id="resultPanel">
+
+    <div class="placeholder" id="placeholder">
+      <div class="placeholder-icon">🔍</div>
+      <p>Fill in the loan details and click<br><strong>Analyze Fraud Risk</strong><br>to get an instant prediction.</p>
+    </div>
+
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      Analyzing loan application...
+    </div>
+
+    <div id="resultContent" style="display:none; display:flex; flex-direction:column; gap:16px;">
+
+      <!-- Risk gauge -->
+      <div class="risk-gauge" id="riskGauge">
+        <div class="risk-icon" id="riskIcon">—</div>
+        <div class="risk-label" id="riskLabel">—</div>
+        <div style="font-size:13px;color:#718096;margin-top:4px">Risk Assessment</div>
+        <div class="prob-section">
+          <div class="prob-title">Fraud Probability</div>
+          <div class="prob-bar-track">
+            <div class="prob-bar-fill" id="probBar" style="width:0%"></div>
+          </div>
+          <div class="prob-value" id="probValue">—</div>
+        </div>
+      </div>
+
+      <!-- Decision -->
+      <div class="decision-box" id="decisionBox">
+        <span id="decisionIcon">—</span>
+        <span id="decisionText">—</span>
+      </div>
+
+      <!-- Metrics -->
+      <div class="metrics-grid">
+        <div class="metric-box">
+          <div class="metric-box-label">Loan Amount</div>
+          <div class="metric-box-value" id="m-amount">—</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-box-label">Interest Rate</div>
+          <div class="metric-box-value" id="m-rate">—</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-box-label">DTI Ratio</div>
+          <div class="metric-box-value" id="m-dti">—</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-box-label">Annual Income</div>
+          <div class="metric-box-value" id="m-income">—</div>
+        </div>
+      </div>
+
+      <!-- Risk factors -->
+      <div class="explanation">
+        <div class="explanation-title">Risk Factor Analysis</div>
+        <div id="factorsList"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- History -->
+<div style="max-width:1100px;margin:0 auto;padding:0 20px 60px;" id="historySection" style="display:none">
+  <div class="history-title">Recent Checks</div>
+  <div id="historyList"></div>
+</div>
+
+<script>
+  const API = 'http://localhost:8000';
+  let sessionStats = { total: 0, flagged: 0, probs: [] };
+  let history = [];
+
+  // ── API STATUS CHECK ──
+  async function checkApiStatus() {
+    try {
+      const r = await fetch(`${API}/health`);
+      if (r.ok) {
+        document.getElementById('apiDot').classList.add('online');
+        document.getElementById('apiStatusText').textContent = 'API Connected — Model v1 Ready';
+      }
+    } catch {
+      document.getElementById('apiStatusText').textContent = 'API Offline — Start the FastAPI server';
+    }
+  }
+  checkApiStatus();
+
+  // ── PRESETS ──
+  const presets = {
+    safe: {
+      loan_amnt:15000, funded_amnt:15000, term:'36', int_rate:6.5,
+      installment:153, annual_inc:95000, dti:8.2, delinq_2yrs:0,
+      inq_last_6mths:0, open_acc:6, pub_rec:0, revol_bal:3000,
+      revol_util:12, total_acc:12, mort_acc:2, pub_rec_bankruptcies:0
+    },
+    risky: {
+      loan_amnt:35000, funded_amnt:35000, term:'60', int_rate:24.99,
+      installment:950, annual_inc:30000, dti:38.5, delinq_2yrs:3,
+      inq_last_6mths:5, open_acc:15, pub_rec:2, revol_bal:28000,
+      revol_util:92, total_acc:20, mort_acc:0, pub_rec_bankruptcies:1
+    },
+    borderline: {
+      loan_amnt:15000, funded_amnt:15000, term:'36', int_rate:12.5,
+      installment:502, annual_inc:65000, dti:18.5, delinq_2yrs:0,
+      inq_last_6mths:1, open_acc:8, pub_rec:0, revol_bal:12000,
+      revol_util:45, total_acc:15, mort_acc:1, pub_rec_bankruptcies:0
+    }
+  };
+
+  function fillPreset(name) {
+    const p = presets[name];
+    Object.keys(p).forEach(k => {
+      const el = document.getElementById(k);
+      if (el) el.value = p[k];
+    });
+  }
+
+  // ── FORM SUBMIT ──
+  document.getElementById('loanForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const payload = {
+      loan_amnt:            +document.getElementById('loan_amnt').value,
+      funded_amnt:          +document.getElementById('funded_amnt').value,
+      term:                 +document.getElementById('term').value,
+      int_rate:             +document.getElementById('int_rate').value,
+      installment:          +document.getElementById('installment').value,
+      annual_inc:           +document.getElementById('annual_inc').value,
+      dti:                  +document.getElementById('dti').value,
+      delinq_2yrs:          +document.getElementById('delinq_2yrs').value,
+      inq_last_6mths:       +document.getElementById('inq_last_6mths').value,
+      open_acc:             +document.getElementById('open_acc').value,
+      pub_rec:              +document.getElementById('pub_rec').value,
+      revol_bal:            +document.getElementById('revol_bal').value,
+      revol_util:           +document.getElementById('revol_util').value,
+      total_acc:            +document.getElementById('total_acc').value,
+      mort_acc:             +document.getElementById('mort_acc').value,
+      pub_rec_bankruptcies: +document.getElementById('pub_rec_bankruptcies').value,
+    };
+
+    showLoading();
+
+    try {
+      const res  = await fetch(`${API}/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      showResult(data, payload);
+      addToHistory(data, payload);
+      updateStats(data);
+    } catch (err) {
+      alert('Could not connect to API. Make sure the FastAPI server is running on port 8000.');
+      showPlaceholder();
+    }
+  });
+
+  // ── SHOW RESULT ──
+  function showResult(data, payload) {
+    document.getElementById('placeholder').style.display   = 'none';
+    document.getElementById('loader').style.display        = 'none';
+    document.getElementById('resultContent').style.display = 'flex';
+
+    const risk  = data.risk_level;
+    const prob  = data.fraud_probability;
+    const icons = { LOW: '✅', MEDIUM: '⚠️', HIGH: '🚨' };
+
+    // Gauge
+    const gauge = document.getElementById('riskGauge');
+    gauge.className = `risk-gauge ${risk}`;
+    document.getElementById('riskIcon').textContent  = icons[risk];
+    const rl = document.getElementById('riskLabel');
+    rl.textContent = risk + ' RISK';
+    rl.className   = `risk-label ${risk}`;
+
+    // Prob bar
+    document.getElementById('probBar').style.width  = (prob * 100) + '%';
+    document.getElementById('probValue').textContent = (prob * 100).toFixed(1) + '%';
+
+    // Decision
+    const db = document.getElementById('decisionBox');
+    if (risk === 'LOW') {
+      db.className = 'decision-box approve';
+      document.getElementById('decisionIcon').textContent = '✅';
+      document.getElementById('decisionText').textContent = 'Recommend APPROVAL — Low fraud risk detected';
+    } else if (risk === 'MEDIUM') {
+      db.className = 'decision-box review';
+      document.getElementById('decisionIcon').textContent = '⚠️';
+      document.getElementById('decisionText').textContent = 'Recommend MANUAL REVIEW — Borderline risk profile';
+    } else {
+      db.className = 'decision-box reject';
+      document.getElementById('decisionIcon').textContent = '🚨';
+      document.getElementById('decisionText').textContent = 'Recommend REJECTION — High fraud risk detected';
+    }
+
+    // Metrics
+    document.getElementById('m-amount').textContent = '$' + payload.loan_amnt.toLocaleString();
+    document.getElementById('m-rate').textContent   = payload.int_rate + '%';
+    document.getElementById('m-dti').textContent    = payload.dti + '%';
+    document.getElementById('m-income').textContent = '$' + payload.annual_inc.toLocaleString();
+
+    // Risk factors
+    const factors = [
+      { name: 'Interest Rate',       value: payload.int_rate,         bad: v => v > 20,   ok: v => v > 12 },
+      { name: 'DTI Ratio',           value: payload.dti,              bad: v => v > 30,   ok: v => v > 20 },
+      { name: 'Delinquencies',       value: payload.delinq_2yrs,      bad: v => v >= 2,   ok: v => v >= 1 },
+      { name: 'Revolving Util.',     value: payload.revol_util + '%', bad: v => false,    ok: v => false,   raw: payload.revol_util, badRaw: v => v > 70, okRaw: v => v > 40 },
+      { name: 'Bankruptcies',        value: payload.pub_rec_bankruptcies, bad: v => v > 0, ok: v => false },
+      { name: 'Credit Inquiries',    value: payload.inq_last_6mths,   bad: v => v >= 4,   ok: v => v >= 2 },
+    ];
+
+    const fl = document.getElementById('factorsList');
+    fl.innerHTML = factors.map(f => {
+      const raw = f.rawValue !== undefined ? f.rawValue : (typeof f.value === 'string' ? parseFloat(f.value) : f.value);
+      const isBad = f.badRaw ? f.badRaw(payload.revol_util) : f.bad(raw);
+      const isOk  = f.okRaw  ? f.okRaw(payload.revol_util)  : f.ok(raw);
+      const cls   = isBad ? 'bad' : (isOk ? 'ok' : 'good');
+      const icon  = isBad ? '🔴' : (isOk ? '🟡' : '🟢');
+      return `<div class="factor">
+        <span class="factor-name">${icon} ${f.name}</span>
+        <span class="factor-value ${cls}">${f.value}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function showLoading() {
+    document.getElementById('placeholder').style.display   = 'none';
+    document.getElementById('resultContent').style.display = 'none';
+    document.getElementById('loader').style.display        = 'block';
+    document.getElementById('submitBtn').disabled = true;
+    setTimeout(() => document.getElementById('submitBtn').disabled = false, 2000);
+  }
+
+  function showPlaceholder() {
+    document.getElementById('placeholder').style.display   = 'flex';
+    document.getElementById('loader').style.display        = 'none';
+    document.getElementById('resultContent').style.display = 'none';
+  }
+
+  // ── HISTORY ──
+  function addToHistory(data, payload) {
+    history.unshift({ data, payload, time: new Date() });
+    if (history.length > 5) history.pop();
+    renderHistory();
+    document.getElementById('historySection').style.display = 'block';
+  }
+
+  function renderHistory() {
+    document.getElementById('historyList').innerHTML = history.map(h => `
+      <div class="history-item">
+        <span class="history-amount">$${h.payload.loan_amnt.toLocaleString()}</span>
+        <span class="history-time">${h.time.toLocaleTimeString()}</span>
+        <span>${(h.data.fraud_probability * 100).toFixed(1)}% fraud prob</span>
+        <span class="history-badge badge-${h.data.risk_level}">${h.data.risk_level}</span>
+      </div>
+    `).join('');
+  }
+
+  // ── STATS ──
+  function updateStats(data) {
+    sessionStats.total++;
+    if (data.risk_level === 'HIGH') sessionStats.flagged++;
+    sessionStats.probs.push(data.fraud_probability);
+    const avg = sessionStats.probs.reduce((a,b) => a+b, 0) / sessionStats.probs.length;
+    document.getElementById('total-checked').textContent = sessionStats.total;
+    document.getElementById('total-flagged').textContent = sessionStats.flagged;
+    document.getElementById('avg-prob').textContent = (avg * 100).toFixed(1) + '%';
+  }
+</script>
+
+</body>
+</html>

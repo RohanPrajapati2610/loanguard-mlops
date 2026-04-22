@@ -26,5 +26,10 @@ mlruns/
 Thumbs.db
 
 # IDE
-.vscode/
 .idea/
+
+# Claude memory (not part of project)
+.claude/
+
+# Retrain temp files
+data/processed/retrain_combined.csv
