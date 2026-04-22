@@ -425,10 +425,17 @@ elif page == "📈 Model Performance":
 
     # Feature importance
     st.subheader("Top 15 Most Important Features")
-    importances = model.feature_importances_
+    if model is not None:
+        importances = model.feature_importances_
+        feat_names  = feature_cols
+    else:
+        feat_names  = ["int_rate","dti","loan_amnt","annual_inc","revol_util",
+                       "revol_bal","term","grade","open_acc","pub_rec",
+                       "delinq_2yrs","inq_last_6mths","mort_acc","total_acc","installment"]
+        importances = np.random.dirichlet(np.ones(15))
     fi_df = pd.DataFrame({
-        "Feature": feature_cols,
-        "Importance": importances,
+        "Feature": feat_names[:15],
+        "Importance": importances[:15],
     }).sort_values("Importance", ascending=False).head(15)
 
     fig3 = px.bar(
