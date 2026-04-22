@@ -177,6 +177,15 @@ def log_prediction(input_data: dict, prediction: int, probability: float):
 # ENDPOINTS
 # ─────────────────────────────────────────────
 
+@app.get("/predictions")
+def get_predictions(limit: int = 100):
+    """Return recent predictions log as JSON — used by the Streamlit dashboard"""
+    if os.path.exists(PREDICTIONS_LOG):
+        df = pd.read_csv(PREDICTIONS_LOG).tail(limit)
+        return df.to_dict(orient="records")
+    return []
+
+
 @app.get("/health")
 def health_check():
     """Check if API is alive and model is loaded"""

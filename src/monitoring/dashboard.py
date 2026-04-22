@@ -126,10 +126,23 @@ def load_model():
         return model
     return None
 
+API_URL = "https://rohanprajapati2610-loanguard-api.hf.space"
+
 def load_predictions():
+    # Try fetching from the live API first
+    try:
+        import requests
+        r = requests.get(f"{API_URL}/predictions", timeout=5)
+        if r.status_code == 200 and r.json():
+            return pd.DataFrame(r.json())
+    except Exception:
+        pass
+
+    # Fallback: local CSV
     if os.path.exists(PREDS_LOG):
         return pd.read_csv(PREDS_LOG)
-    # Sample predictions for demo
+
+    # Last resort: synthetic demo data
     np.random.seed(42)
     n = 20
     return pd.DataFrame({
