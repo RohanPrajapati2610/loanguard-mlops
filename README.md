@@ -1,3 +1,12 @@
+---
+title: LoanGuard API
+emoji: 🛡️
+colorFrom: purple
+colorTo: blue
+sdk: docker
+pinned: false
+---
+
 # LoanGuard MLOps — Loan Fraud Detection System
 
 A production-grade MLOps pipeline for detecting fraudulent loan applications. Built end-to-end with automated drift detection, self-healing retraining, and real-time monitoring.
