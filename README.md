@@ -17,8 +17,9 @@ A production-grade MLOps pipeline for detecting fraudulent loan applications. Bu
 
 | Interface | Link | Description |
 |---|---|---|
-| Prediction UI | `Coming soon` | Submit a loan application, get instant fraud risk |
-| MLOps Dashboard | `Coming soon` | Real-time model monitoring and drift detection |
+| 🌐 Prediction UI | [loanguard-mlops.vercel.app](https://loanguard-mlops.vercel.app) | Submit a loan application, get instant fraud risk |
+| 📈 MLOps Dashboard | [loanguard-dashboard.hf.space](https://rohanprajapati2610-loanguard-dashboard.hf.space) | Real-time model monitoring and drift detection |
+| 📡 API Docs | [loanguard-api.hf.space/docs](https://rohanprajapati2610-loanguard-api.hf.space/docs) | FastAPI REST API with live Swagger docs |
 
 ---
 
