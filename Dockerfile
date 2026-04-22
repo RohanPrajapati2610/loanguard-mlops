@@ -1,17 +1,23 @@
+# Base image — Python 3.11 slim (lightweight)
 FROM python:3.11-slim
 
-RUN useradd -m -u 1000 user
-USER user
-ENV PATH="/home/user/.local/bin:$PATH"
-
+# Set working directory inside container
 WORKDIR /app
 
-COPY --chown=user requirements.txt .
-RUN pip install --no-cache-dir streamlit plotly pandas numpy scikit-learn xgboost
+# Copy requirements first (Docker caches this layer)
+# If requirements don't change, Docker skips reinstalling — faster builds
+COPY requirements.txt .
 
-COPY --chown=user src/monitoring/dashboard.py .
-COPY --chown=user models/ ./models/
-COPY --chown=user data/processed/feature_columns.json ./data/processed/
-COPY --chown=user .streamlit/ ./.streamlit/
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["streamlit", "run", "dashboard.py", "--server.port", "7860", "--server.address", "0.0.0.0"]
+# Copy the rest of the project
+COPY src/ ./src/
+COPY models/ ./models/
+COPY data/processed/feature_columns.json ./data/processed/feature_columns.json
+
+# HuggingFace Spaces requires port 7860
+EXPOSE 7860
+
+# Run the FastAPI app
+CMD ["uvicorn", "src.api.app:app", "--host", "0.0.0.0", "--port", "7860"]
