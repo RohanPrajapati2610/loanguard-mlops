@@ -24,6 +24,7 @@ from sklearn.metrics import (
     recall_score,
     f1_score,
     confusion_matrix,
+    precision_recall_curve,
 )
 from xgboost import XGBClassifier
 import os
@@ -49,14 +50,19 @@ TARGET_COL      = "fraud_label"
 # - learning_rate=0.05: slow learning = better generalization
 # - scale_pos_weight: handles class imbalance (more legit loans than fraud)
 PARAMS = {
-    "n_estimators": 300,
-    "max_depth": 6,
+    "n_estimators": 500,
+    "max_depth": 5,
     "learning_rate": 0.05,
     "subsample": 0.8,
     "colsample_bytree": 0.8,
+    "min_child_weight": 5,
+    "gamma": 1,
+    "reg_alpha": 0.1,
+    "reg_lambda": 1.5,
     "random_state": 42,
     "eval_metric": "auc",
-    "tree_method": "hist",   # faster training
+    "tree_method": "hist",
+    "early_stopping_rounds": 30,
 }
 
 
@@ -103,7 +109,7 @@ def get_scale_pos_weight(y_train):
 # ─────────────────────────────────────────────
 # STEP 4: Train Model
 # ─────────────────────────────────────────────
-def train_model(X_train, y_train, scale_pos_weight):
+def train_model(X_train, y_train, X_val, y_val, scale_pos_weight):
     log.info("Training XGBoost model ...")
     params = PARAMS.copy()
     params["scale_pos_weight"] = round(scale_pos_weight, 2)
@@ -111,7 +117,7 @@ def train_model(X_train, y_train, scale_pos_weight):
     model = XGBClassifier(**params)
     model.fit(
         X_train, y_train,
-        eval_set=[(X_train, y_train)],
+        eval_set=[(X_val, y_val)],
         verbose=50,
     )
     return model, params
@@ -120,16 +126,29 @@ def train_model(X_train, y_train, scale_pos_weight):
 # ─────────────────────────────────────────────
 # STEP 5: Evaluate Model
 # ─────────────────────────────────────────────
+def find_best_threshold(y_val, y_proba):
+    """Find threshold that maximizes F1 score on validation set."""
+    precisions, recalls, thresholds = precision_recall_curve(y_val, y_proba)
+    f1_scores = 2 * (precisions * recalls) / (precisions + recalls + 1e-8)
+    best_idx = f1_scores.argmax()
+    best_threshold = thresholds[best_idx] if best_idx < len(thresholds) else 0.5
+    log.info(f"Best threshold: {best_threshold:.4f} (F1={f1_scores[best_idx]:.4f})")
+    return round(float(best_threshold), 4)
+
+
 def evaluate_model(model, X_val, y_val):
     log.info("Evaluating model ...")
-    y_pred  = model.predict(X_val)
     y_proba = model.predict_proba(X_val)[:, 1]
+
+    threshold = find_best_threshold(y_val, y_proba)
+    y_pred = (y_proba >= threshold).astype(int)
 
     metrics = {
         "roc_auc":   round(roc_auc_score(y_val, y_proba), 4),
         "f1_score":  round(f1_score(y_val, y_pred), 4),
         "precision": round(precision_score(y_val, y_pred), 4),
         "recall":    round(recall_score(y_val, y_pred), 4),
+        "threshold": threshold,
     }
 
     log.info(f"ROC-AUC:   {metrics['roc_auc']}")
@@ -138,7 +157,7 @@ def evaluate_model(model, X_val, y_val):
     log.info(f"Recall:    {metrics['recall']}")
     log.info(f"\nClassification Report:\n{classification_report(y_val, y_pred)}")
 
-    return metrics
+    return metrics, threshold
 
 
 # ─────────────────────────────────────────────
@@ -146,7 +165,7 @@ def evaluate_model(model, X_val, y_val):
 # ─────────────────────────────────────────────
 # MLflow tracks: params used, metrics achieved, the model itself
 # So you can always answer: "which model is in prod? how was it trained?"
-def log_to_mlflow(model, params, metrics, X_train):
+def log_to_mlflow(model, params, metrics, X_train, threshold):
     log.info("Logging to MLflow ...")
 
     mlflow.set_tracking_uri(MLFLOW_URI)
@@ -177,6 +196,11 @@ def log_to_mlflow(model, params, metrics, X_train):
             json.dump(feature_cols, f)
         mlflow.log_artifact("data/processed/feature_columns.json")
 
+        # Save optimal threshold so API uses it at inference time
+        with open("models/threshold.json", "w") as f:
+            json.dump({"threshold": threshold}, f)
+        mlflow.log_artifact("models/threshold.json")
+
         run_id = run.info.run_id
         log.info(f"MLflow Run ID: {run_id}")
         log.info(f"Experiment: {EXPERIMENT_NAME}")
@@ -193,9 +217,9 @@ def main():
     X, y                              = load_data(DATA_PATH)
     X_train, X_val, y_train, y_val   = split_data(X, y)
     scale_pos_weight                  = get_scale_pos_weight(y_train)
-    model, params                     = train_model(X_train, y_train, scale_pos_weight)
-    metrics                           = evaluate_model(model, X_val, y_val)
-    run_id                            = log_to_mlflow(model, params, metrics, X_train)
+    model, params                     = train_model(X_train, y_train, X_val, y_val, scale_pos_weight)
+    metrics, threshold                = evaluate_model(model, X_val, y_val)
+    run_id                            = log_to_mlflow(model, params, metrics, X_train, threshold)
 
     log.info("=" * 50)
     log.info("Training complete!")

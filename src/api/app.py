@@ -63,6 +63,14 @@ with open(FEATURE_PATH) as f:
     FEATURE_COLUMNS = json.load(f)
 log.info(f"Expecting {len(FEATURE_COLUMNS)} features")
 
+# Load optimal prediction threshold
+THRESHOLD_PATH = "models/threshold.json"
+THRESHOLD = 0.5  # fallback default
+if os.path.exists(THRESHOLD_PATH):
+    with open(THRESHOLD_PATH) as f:
+        THRESHOLD = json.load(f).get("threshold", 0.5)
+log.info(f"Using prediction threshold: {THRESHOLD}")
+
 
 # ─────────────────────────────────────────────
 # FASTAPI APP
@@ -221,13 +229,13 @@ def predict(application: LoanApplication):
         input_dict = application.model_dump()
         df = align_features(input_dict)
 
-        prediction  = int(model.predict(df)[0])
         probability = float(model.predict_proba(df)[0][1])
+        prediction  = int(probability >= THRESHOLD)
 
-        # Risk level bucketing
-        if probability < 0.3:
+        # Risk level bucketing relative to threshold
+        if probability < THRESHOLD * 0.6:
             risk_level = "LOW"
-        elif probability < 0.6:
+        elif probability < THRESHOLD:
             risk_level = "MEDIUM"
         else:
             risk_level = "HIGH"
